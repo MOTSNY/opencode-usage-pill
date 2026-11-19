@@ -44,6 +44,7 @@ interface Usage {
   pctPartial: boolean
   account?: Account
   usageURL?: string
+  consoleConnected: boolean
   models: ModelUsage[]
   switchTimeline: string[]
   switchCount: number
@@ -156,6 +157,7 @@ function getUsage(session: MountedSession, plan: Plan): Usage | undefined {
     pctPartial,
     account: limits?.go as Account | undefined,
     usageURL: limits?.workspace?.usageURL,
+    consoleConnected: !!limits?.workspace,
     models: modelList,
     switchTimeline,
     switchCount: rootBreakdown.switchCount,
@@ -491,6 +493,12 @@ function UsageMenu(props: {
             )}
           </Show>
 
+          <Show when={!value().account && !value().consoleConnected}>
+            <div style={sumStyle} title={props.ctx.t("row.noConsoleHint")}>
+              {props.ctx.t("row.noConsole")}
+            </div>
+          </Show>
+
           <Show when={value().usageURL}>
             {(url) => (
               <button type="button" style={consoleStyle} onClick={() => void props.ctx.system.openExternal(url())}>
@@ -526,6 +534,8 @@ export default Plugin.define({
       "row.sumPartial": "(partial)",
       "row.sumHint": "Estimated list cost against the models' monthly Go limits. Not official billing or account usage.",
       "row.accountOfficial": "Account (official)",
+      "row.noConsole": "Console not connected — official limits unavailable",
+      "row.noConsoleHint": "Sign in to OpenCode Console to see the official 5h / week / month account limits.",
       "row.account5hShort": "5h",
       "row.weekShort": "wk",
       "row.monthShort": "mo",
@@ -572,6 +582,8 @@ export default Plugin.define({
       "row.sumPartial": "(часть)",
       "row.sumHint": "Оценка list cost по месячным лимитам моделей Go. Не официальный биллинг и не процент аккаунта.",
       "row.accountOfficial": "Аккаунт (офиц.)",
+      "row.noConsole": "Console не подключён — официальные лимиты недоступны",
+      "row.noConsoleHint": "Войдите в OpenCode Console, чтобы видеть официальные лимиты аккаунта 5ч / неделя / месяц.",
       "row.account5hShort": "5ч",
       "row.weekShort": "нед",
       "row.monthShort": "мес",

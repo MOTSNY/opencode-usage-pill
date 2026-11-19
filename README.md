@@ -34,6 +34,8 @@ Go monthly limits.
 
 - OpenCode Desktop **2.3.2** (the GUI plugin API is experimental and may change
   between releases).
+- The official account percentages and the `Console Activity` link require an
+  OpenCode Console sign-in. The estimate itself works without it.
 - Tested on Windows 11. macOS and Linux are not tested.
 - The estimate is designed for `opencode-go` models. Other providers can show a
   dollar estimate, but no percentage without a Go limit.
