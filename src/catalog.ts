@@ -4,6 +4,7 @@ import type { Plan } from "./usage"
 interface When {
   utc_days?: { in?: string[] }
   utc_hours?: { gte?: string; lt?: string }
+  date?: { gte?: string; lt?: string }
   any?: When[]
   all?: When[]
 }
@@ -23,10 +24,10 @@ interface CatalogModel {
 const FALLBACK: Record<string, Partial<Record<Plan, number>>> = {
   "deepseek-v4.1-flash": { go: 100, "go-plus": 200, "go-teams": 105 },
   "deepseek-v4-pro": { go: 15, "go-plus": 60, "go-teams": 20 },
-  "glm-5.3": { go: 500, "go-plus": 1000, "go-teams": 505 },
+  "glm-5.3": { go: 200, "go-plus": 400, "go-teams": 205 },
   "glm-5.3-flash": { go: 60, "go-plus": 180, "go-teams": 65 },
   "glm-5.2": { go: 60, "go-plus": 180, "go-teams": 65 },
-  "kimi-k3.1-pro": { go: 15, "go-plus": 60, "go-teams": 20 },
+  "kimi-k3.1-pro": { go: 60, "go-plus": 120, "go-teams": 65 },
   "kimi-k3": { go: 15, "go-plus": 60, "go-teams": 20 },
   "kimi-k2.7-code": { go: 60, "go-plus": 180, "go-teams": 65 },
   "qwen3.8-max": { go: 15, "go-plus": 60, "go-teams": 20 },
@@ -49,21 +50,20 @@ const FALLBACK: Record<string, Partial<Record<Plan, number>>> = {
   "muse-spark-1.3-contributor": { go: 60, "go-plus": 120, "go-teams": 65 },
   "muse-spark-1.2-contributor": { go: 60, "go-plus": 120, "go-teams": 65 },
   "longcat-2.0": { go: 60, "go-plus": 240, "go-teams": 65 },
+  "longcat-2.5": { go: 60, "go-plus": 240, "go-teams": 65 },
+}
+
+const DEEPSEEK_PEAK_HOURS: When = {
+  utc_days: { in: ["mon", "tue", "wed", "thu", "fri"] },
+  any: [
+    { all: [{ utc_hours: { gte: "01:00" } }, { utc_hours: { lt: "04:00" } }] },
+    { all: [{ utc_hours: { gte: "06:00" } }, { utc_hours: { lt: "10:00" } }] },
+  ],
 }
 
 const FALLBACK_MULTIPLIERS: Record<string, Multiplier[]> = {
-  "deepseek-v4.1-flash": [
-    {
-      when: {
-        utc_days: { in: ["mon", "tue", "wed", "thu", "fri"] },
-        any: [
-          { all: [{ utc_hours: { gte: "01:00" } }, { utc_hours: { lt: "04:00" } }] },
-          { all: [{ utc_hours: { gte: "06:00" } }, { utc_hours: { lt: "10:00" } }] },
-        ],
-      },
-      factor: 2,
-    },
-  ],
+  "deepseek-v4.1-flash": [{ when: DEEPSEEK_PEAK_HOURS, factor: 2 }],
+  "deepseek-v4-pro": [{ when: DEEPSEEK_PEAK_HOURS, factor: 2 }],
 }
 
 const DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
@@ -84,6 +84,12 @@ function matches(when: When | undefined, date: Date): boolean {
     const minutes = date.getUTCHours() * 60 + date.getUTCMinutes()
     if (when.utc_hours.gte && minutes < toMinutes(when.utc_hours.gte)) return false
     if (when.utc_hours.lt && minutes >= toMinutes(when.utc_hours.lt)) return false
+  }
+
+  if (when.date) {
+    const time = date.getTime()
+    if (when.date.gte && time < Date.parse(when.date.gte)) return false
+    if (when.date.lt && time >= Date.parse(when.date.lt)) return false
   }
 
   if (when.any && when.any.length > 0 && !when.any.some((item) => matches(item, date))) return false
